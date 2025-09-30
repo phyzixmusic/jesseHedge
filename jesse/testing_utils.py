@@ -54,8 +54,17 @@ def set_up(is_futures_trading=True, leverage=1, leverage_mode='cross', fee=0):
         config['env']['exchanges'][exchanges.SANDBOX]['type'] = 'futures'
         config['env']['exchanges'][exchanges.SANDBOX]['futures_leverage_mode'] = leverage_mode
         config['env']['exchanges'][exchanges.SANDBOX]['futures_leverage'] = leverage
+        config['env']['exchanges'][exchanges.SANDBOX]['futures_position_mode'] = 'one-way'
     else:
         config['env']['exchanges'][exchanges.SANDBOX]['type'] = 'spot'
+    
+    # Initialize store with considering exchanges so Exchange objects are created
+    config['app']['considering_exchanges'] = [exchanges.SANDBOX]
+    config['app']['trading_exchanges'] = [exchanges.SANDBOX]
+    config['app']['trading_symbols'] = ['BTC-USDT']
+    
+    from jesse.store import store
+    store.reset(force_install_routes=False)
 
 
 def single_route_backtest(

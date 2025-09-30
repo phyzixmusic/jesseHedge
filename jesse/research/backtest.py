@@ -206,6 +206,7 @@ def _format_config(config):
     if exchange_config['type'] == 'futures':
         exchange_config['futures_leverage'] = config['futures_leverage']
         exchange_config['futures_leverage_mode'] = config['futures_leverage_mode']
+        exchange_config['futures_position_mode'] = config.get('futures_position_mode', 'one-way')
 
     return {
         'exchanges': {
