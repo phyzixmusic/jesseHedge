@@ -1049,6 +1049,18 @@ class Strategy(ABC):
             return
 
         if self.position.is_open:
+            # Check if strategy wants to prevent forced closure
+            if hasattr(self, 'prevent_forced_closure') and self.prevent_forced_closure:
+                # Count as unrealized, don't close the position
+                store.app.total_open_trades += 1
+                store.app.total_open_pl += self.position.pnl
+                logger.info(
+                    f"Keeping open {self.exchange}-{self.symbol} position at {self.position.current_price} with UNREALIZED PNL: {round(self.position.pnl, 4)}({round(self.position.pnl_percentage, 2)}%) (prevent_forced_closure=True)"
+                )
+                self.terminate()
+                return
+
+            # Default behavior: force close position
             store.app.total_open_trades += 1
             store.app.total_open_pl += self.position.pnl
             logger.info(
