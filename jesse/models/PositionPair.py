@@ -255,11 +255,11 @@ class PositionPair:
     def _on_executed_order(self, order) -> None:
         """
         Route executed order to the correct position based on position_side.
-        
+
         In hedge mode, orders should specify which position (long/short) they target.
         For orders without position_side (e.g., auto-generated stop-loss), we route
         based on which position is open.
-        
+
         Args:
             order: Order object with optional position_side attribute
         """

@@ -4,18 +4,35 @@ import jesse.helpers as jh
 from jesse.models.ClosedTrade import store_closed_trade_into_db
 from jesse.enums import sides
 from jesse.services import logger
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from jesse.models.PositionPair import PositionPair
 
 
 class ClosedTrades:
     def __init__(self) -> None:
         self.trades = []
         self.tempt_trades = {}
+        # For hedge mode: separate tracking for long and short
+        self.tempt_trades_long = {}
+        self.tempt_trades_short = {}
 
-    def _get_current_trade(self, exchange: str, symbol: str) -> ClosedTrade:
+    def _get_current_trade(self, exchange: str, symbol: str, position_side: str = None) -> ClosedTrade:
         key = jh.key(exchange, symbol)
+
+        # For hedge mode, use separate storage for long/short
+        if position_side == 'long':
+            storage = self.tempt_trades_long
+        elif position_side == 'short':
+            storage = self.tempt_trades_short
+        else:
+            # One-way mode (backwards compatible)
+            storage = self.tempt_trades
+
         # if already exists, return it
-        if key in self.tempt_trades:
-            t: ClosedTrade = self.tempt_trades[key]
+        if key in storage:
+            t: ClosedTrade = storage[key]
             # set the trade.id if not generated already
             if not t.id:
                 t.id = jh.generate_unique_id()
@@ -23,15 +40,26 @@ class ClosedTrades:
         # else, create a new trade, store it, and return it
         t = ClosedTrade()
         t.id = jh.generate_unique_id()
-        self.tempt_trades[key] = t
+        storage[key] = t
         return t
 
-    def _reset_current_trade(self, exchange: str, symbol: str) -> None:
+    def _reset_current_trade(self, exchange: str, symbol: str, position_side: str = None) -> None:
         key = jh.key(exchange, symbol)
-        self.tempt_trades[key] = ClosedTrade()
+
+        # For hedge mode, reset specific position trade
+        if position_side == 'long':
+            self.tempt_trades_long[key] = ClosedTrade()
+        elif position_side == 'short':
+            self.tempt_trades_short[key] = ClosedTrade()
+        else:
+            # One-way mode (backwards compatible)
+            self.tempt_trades[key] = ClosedTrade()
 
     def add_executed_order(self, executed_order: Order) -> None:
-        t = self._get_current_trade(executed_order.exchange, executed_order.symbol)
+        # Get position_side from order (for hedge mode)
+        position_side = getattr(executed_order, 'position_side', None)
+
+        t = self._get_current_trade(executed_order.exchange, executed_order.symbol, position_side)
         if executed_order.is_partially_filled:
             qty = executed_order.filled_qty
         else:
@@ -41,15 +69,15 @@ class ClosedTrades:
 
         self.add_order_record_only(
             executed_order.exchange, executed_order.symbol, executed_order.side,
-            qty, executed_order.price
+            qty, executed_order.price, position_side
         )
 
-    def add_order_record_only(self, exchange: str, symbol: str, side: str, qty: float, price: float) -> None:
+    def add_order_record_only(self, exchange: str, symbol: str, side: str, qty: float, price: float, position_side: str = None) -> None:
         """
         used in add_executed_order() and for when initially adding open positions in live mode.
         used for correct trade-metrics calculations in persistency support for live mode.
         """
-        t = self._get_current_trade(exchange, symbol)
+        t = self._get_current_trade(exchange, symbol, position_side)
         if side == sides.BUY:
             t.buy_orders.append(np.array([abs(qty), price]))
         elif side == sides.SELL:
@@ -57,8 +85,15 @@ class ClosedTrades:
         else:
             raise Exception(f"Invalid order side: {side}")
 
-    def open_trade(self, position: Position) -> None:
-        t = self._get_current_trade(position.exchange_name, position.symbol)
+    def open_trade(self, position: Position, position_side: str = None) -> None:
+        """
+        Open a trade for tracking.
+
+        Args:
+            position: Position object
+            position_side: 'long' or 'short' for hedge mode, None for one-way mode
+        """
+        t = self._get_current_trade(position.exchange_name, position.symbol, position_side)
         t.opened_at = position.opened_at
         t.leverage = position.leverage
         try:
@@ -73,8 +108,15 @@ class ClosedTrades:
         t.symbol = position.symbol
         t.type = position.type
 
-    def close_trade(self, position: Position) -> None:
-        t = self._get_current_trade(position.exchange_name, position.symbol)
+    def close_trade(self, position: Position, position_side: str = None) -> None:
+        """
+        Close a trade and record it.
+
+        Args:
+            position: Position object
+            position_side: 'long' or 'short' for hedge mode, None for one-way mode
+        """
+        t = self._get_current_trade(position.exchange_name, position.symbol, position_side)
 
         # If the trade is not open yet we are calling the close_trade function
         if not t.is_open:
@@ -103,7 +145,7 @@ class ClosedTrades:
                 f"PNL: {round(t.pnl, 2)} ({round(t.pnl_percentage, 2)}%)"
             )
         # at the end, reset the trade variable
-        self._reset_current_trade(position.exchange_name, position.symbol)
+        self._reset_current_trade(position.exchange_name, position.symbol, position_side)
 
     @property
     def count(self) -> int:

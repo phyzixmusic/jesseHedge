@@ -120,6 +120,19 @@ documentation is **short yet very informative**.
 - [💬 Discord community](https://jesse.trade/discord)
 - [🤖 JesseGPT](https://jesse.trade/gpt) (Requires a free account)
 
+## Hedge Mode Support
+
+This fork includes **hedge mode** support for futures trading, allowing simultaneous long and short positions on the same symbol. Perfect for market-neutral strategies and advanced hedging techniques.
+
+📖 **[Read the Hedge Mode Guide](HEDGE_MODE_GUIDE.md)** for complete documentation.
+
+**Quick Links:**
+- [Complete Guide](HEDGE_MODE_GUIDE.md) - Usage, examples, and troubleshooting
+- [Current Status](HEDGE_MODE_CURRENT_STATUS.md) - What works and what doesn't
+- [Implementation Plan](HEDGE_MODE_IMPLEMENTATION_PLAN.md) - Technical architecture
+
+**Status**: ✅ Fully functional for backtesting (live trading not yet implemented)
+
 ## What's next?
 
 You can see the project's **[roadmap here](https://docs.jesse.trade/docs/roadmap.html)**. **Subscribe** to our mailing list at [jesse.trade](https://jesse.trade) to get the good stuff as soon they're released. Don't worry, We won't send you spam—Pinky promise.

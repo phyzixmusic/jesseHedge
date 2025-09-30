@@ -305,7 +305,8 @@ class Position:
 
     def _close(self):
         from jesse.store import store
-        store.completed_trades.close_trade(self)
+        # Pass position_side for hedge mode (None for one-way mode)
+        store.completed_trades.close_trade(self, position_side=self.side)
 
     def _mutating_reduce(self, qty: float, price: float) -> None:
         if not self._can_mutate_qty:
@@ -385,7 +386,8 @@ class Position:
 
     def _open(self):
         from jesse.store import store
-        store.completed_trades.open_trade(self)
+        # Pass position_side for hedge mode (None for one-way mode)
+        store.completed_trades.open_trade(self, position_side=self.side)
 
     def _on_executed_order(self, order: Order) -> None:
         # futures (live)
