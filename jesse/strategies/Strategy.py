@@ -360,16 +360,27 @@ class Strategy(ABC):
         else:
             price_to_compare = self.price
 
-        for o in self._buy:
+        # Get original orders to extract position_side (if in hedge mode)
+        original_orders = self._buy_original if hasattr(self, '_buy_original') and self._buy_original else None
+        
+        for idx, o in enumerate(self._buy):
+            # Extract position_side from original if available
+            position_side = None
+            if original_orders:
+                # Make it a list if single order
+                orig_list = original_orders if type(original_orders[0]) in [list, tuple] else [original_orders]
+                if idx < len(orig_list) and len(orig_list[idx]) >= 3:
+                    position_side = orig_list[idx][2]
+            
             # MARKET order
             if jh.is_price_near(o[1], price_to_compare):
-                self.broker.buy_at_market(o[0])
+                self.broker.buy_at_market(o[0], position_side=position_side)
             # STOP order
             elif o[1] > price_to_compare:
-                self.broker.start_profit_at(sides.BUY, o[0], o[1])
+                self.broker.start_profit_at(sides.BUY, o[0], o[1], position_side=position_side)
             # LIMIT order
             elif o[1] < price_to_compare:
-                self.broker.buy_at(o[0], o[1])
+                self.broker.buy_at(o[0], o[1], position_side=position_side)
             else:
                 raise ValueError(f'Invalid order price: o[1]:{o[1]}, self.price:{self.price}')
 
@@ -382,16 +393,27 @@ class Strategy(ABC):
         else:
             price_to_compare = self.price
 
-        for o in self._sell:
+        # Get original orders to extract position_side (if in hedge mode)
+        original_orders = self._sell_original if hasattr(self, '_sell_original') and self._sell_original else None
+        
+        for idx, o in enumerate(self._sell):
+            # Extract position_side from original if available
+            position_side = None
+            if original_orders:
+                # Make it a list if single order
+                orig_list = original_orders if type(original_orders[0]) in [list, tuple] else [original_orders]
+                if idx < len(orig_list) and len(orig_list[idx]) >= 3:
+                    position_side = orig_list[idx][2]
+            
             # MARKET order
             if jh.is_price_near(o[1], price_to_compare):
-                self.broker.sell_at_market(o[0])
+                self.broker.sell_at_market(o[0], position_side=position_side)
             # STOP order
             elif o[1] < price_to_compare:
-                self.broker.start_profit_at(sides.SELL, o[0], o[1])
+                self.broker.start_profit_at(sides.SELL, o[0], o[1], position_side=position_side)
             # LIMIT order
             elif o[1] > price_to_compare:
-                self.broker.sell_at(o[0], o[1])
+                self.broker.sell_at(o[0], o[1], position_side=position_side)
             else:
                 raise ValueError(f'Invalid order price: o[1]:{o[1]}, self.price:{self.price}')
 
@@ -423,6 +445,9 @@ class Strategy(ABC):
         self._submit_sell_orders()
 
     def _prepare_buy(self, make_copies: bool = True) -> None:
+        # Store original before formatting (to preserve position_side)
+        original_buy = self.buy if type(self.buy) in [list, tuple] else None
+        
         try:
             self.buy = self._get_formatted_order(self.buy)
         except ValueError:
@@ -433,8 +458,13 @@ class Strategy(ABC):
 
         if make_copies:
             self._buy = self.buy.copy()
+            # Store original to preserve position_side for hedge mode
+            self._buy_original = original_buy
 
     def _prepare_sell(self, make_copies: bool = True) -> None:
+        # Store original before formatting (to preserve position_side)
+        original_sell = self.sell if type(self.sell) in [list, tuple] else None
+        
         try:
             self.sell = self._get_formatted_order(self.sell)
         except ValueError:
@@ -445,6 +475,8 @@ class Strategy(ABC):
 
         if make_copies:
             self._sell = self.sell.copy()
+            # Store original to preserve position_side for hedge mode
+            self._sell_original = original_sell
 
     def _prepare_stop_loss(self, make_copies: bool = True) -> None:
         try:
@@ -1236,8 +1268,20 @@ class Strategy(ABC):
         if type(var[0]) not in [list, tuple]:
             var = [var]
 
-        # create numpy array from list
-        arr = np.array(var, dtype=float)
+        # For hedge mode: extract position_side if present (third element)
+        # and create array with only qty and price (first two elements)
+        cleaned_var = []
+        for order in var:
+            if len(order) >= 3:
+                # Hedge mode format: (qty, price, position_side)
+                # Keep only qty and price for numpy array
+                cleaned_var.append((order[0], order[1]))
+            else:
+                # One-way mode format: (qty, price)
+                cleaned_var.append(order)
+        
+        # create numpy array from list (only qty and price)
+        arr = np.array(cleaned_var, dtype=float)
 
         # validate that the price (second column) is not less or equal to zero
         if arr[:, 1].min() <= 0:
