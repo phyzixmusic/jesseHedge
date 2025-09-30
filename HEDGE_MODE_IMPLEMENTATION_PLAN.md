@@ -1671,3 +1671,6 @@ class MarketNeutralHedge(Strategy):
 **Last Updated**: 2025-09-30  
 **Author**: AI Assistant  
 **Review Status**: Draft - Awaiting Approval
+
+
+

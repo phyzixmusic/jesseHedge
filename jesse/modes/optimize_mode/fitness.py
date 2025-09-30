@@ -15,6 +15,7 @@ def _formatted_inputs_for_isolated_backtest(user_config, routes):
         'type': user_config['exchange']['type'],
         'futures_leverage': user_config['exchange']['futures_leverage'],
         'futures_leverage_mode': user_config['exchange']['futures_leverage_mode'],
+        'futures_position_mode': user_config['exchange'].get('futures_position_mode', 'one-way'),
         'exchange': routes[0]['exchange'],
         'warm_up_candles': jh.get_config('env.data.warmup_candles_num')
     }
