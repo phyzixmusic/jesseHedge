@@ -35,6 +35,8 @@ class Order(Model):
     created_at = BigIntegerField()
     executed_at = BigIntegerField(null=True)
     canceled_at = BigIntegerField(null=True)
+    # For hedge mode: 'long', 'short', or None (one-way mode)
+    position_side = CharField(null=True)
 
     # needed in Jesse, but no need to store in database(?)
     submitted_via = None

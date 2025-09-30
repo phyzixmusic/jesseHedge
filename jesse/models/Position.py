@@ -13,7 +13,7 @@ from jesse.utils import sum_floats, subtract_floats
 
 
 class Position:
-    def __init__(self, exchange_name: str, symbol: str, attributes: dict = None) -> None:
+    def __init__(self, exchange_name: str, symbol: str, attributes: dict = None, side: str = None) -> None:
         self.id = jh.generate_unique_id()
         self.entry_price = None
         self.exit_price = None
@@ -26,6 +26,7 @@ class Position:
         self._funding_rate = None
         self._next_funding_timestamp = None
         self._liquidation_price = None
+        self.side = side  # None for one-way mode, 'long' or 'short' for hedge mode
 
         if attributes is None:
             attributes = {}
@@ -215,6 +216,11 @@ class Position:
             return 'spot'
         else:
             return self.exchange.futures_leverage_mode
+    
+    @property
+    def is_hedge_mode(self) -> bool:
+        """Check if this position is in hedge mode (has a specific side)"""
+        return self.side is not None
 
     @property
     def liquidation_price(self) -> Union[float, np.float64]:
