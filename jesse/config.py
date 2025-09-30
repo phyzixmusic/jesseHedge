@@ -36,6 +36,8 @@ config = {
                 'futures_leverage_mode': 'cross',
                 # 1x, 2x, 10x, 50x, etc. Enter as integers
                 'futures_leverage': 1,
+                # accepted values are: 'one-way' and 'hedge'
+                'futures_position_mode': 'one-way',
                 'balance': 10_000,
             },
         },
@@ -107,6 +109,7 @@ for key in exchange_info:
         'type': exchange_info[key]['type'],
         'futures_leverage_mode': 'cross',
         'futures_leverage': 1,
+        'futures_position_mode': 'one-way',
         'balance': 10_000
     }
 
@@ -146,6 +149,8 @@ def set_config(conf: dict) -> None:
                 config['env']['exchanges'][e['name']]['futures_leverage'] = int(e.get('futures_leverage', 1))
                 # accepted values are: 'cross' and 'isolated'
                 config['env']['exchanges'][e['name']]['futures_leverage_mode'] = e.get('futures_leverage_mode', 'cross')
+                # accepted values are: 'one-way' and 'hedge'
+                config['env']['exchanges'][e['name']]['futures_position_mode'] = e.get('futures_position_mode', 'one-way')
 
     # live mode only
     if jh.is_live():
