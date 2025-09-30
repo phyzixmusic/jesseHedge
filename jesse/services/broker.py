@@ -21,7 +21,7 @@ class Broker:
         if qty == 0:
             raise InvalidStrategy('qty cannot be 0. \nRead more: https://jesse.trade/help/faq/i-keep-getting-invalidstrategy')
 
-    def sell_at_market(self, qty: float) -> Union[Order, None]:
+    def sell_at_market(self, qty: float, position_side: str = None) -> Union[Order, None]:
         self._validate_qty(qty)
 
         return self.api.market_order(
@@ -30,10 +30,11 @@ class Broker:
             abs(qty),
             self.position.current_price,
             sides.SELL,
-            reduce_only=False
+            reduce_only=False,
+            position_side=position_side
         )
 
-    def sell_at(self, qty: float, price: float) -> Union[Order, None]:
+    def sell_at(self, qty: float, price: float, position_side: str = None) -> Union[Order, None]:
         self._validate_qty(qty)
 
         if price < 0:
@@ -45,10 +46,11 @@ class Broker:
             abs(qty),
             price,
             sides.SELL,
-            reduce_only=False
+            reduce_only=False,
+            position_side=position_side
         )
 
-    def buy_at_market(self, qty: float) -> Union[Order, None]:
+    def buy_at_market(self, qty: float, position_side: str = None) -> Union[Order, None]:
         self._validate_qty(qty)
 
         return self.api.market_order(
@@ -57,10 +59,11 @@ class Broker:
             abs(qty),
             self.position.current_price,
             sides.BUY,
-            reduce_only=False
+            reduce_only=False,
+            position_side=position_side
         )
 
-    def buy_at(self, qty: float, price: float) -> Union[Order, None]:
+    def buy_at(self, qty: float, price: float, position_side: str = None) -> Union[Order, None]:
         self._validate_qty(qty)
 
         if price < 0:
@@ -72,10 +75,11 @@ class Broker:
             abs(qty),
             price,
             sides.BUY,
-            reduce_only=False
+            reduce_only=False,
+            position_side=position_side
         )
 
-    def reduce_position_at(self, qty: float, price: float, current_price: float) -> Union[Order, None]:
+    def reduce_position_at(self, qty: float, price: float, current_price: float, position_side: str = None) -> Union[Order, None]:
         self._validate_qty(qty)
 
         qty = abs(qty)
@@ -101,7 +105,8 @@ class Broker:
                 qty,
                 price,
                 side,
-                reduce_only=True
+                reduce_only=True,
+                position_side=position_side
             )
 
         # LIMIT order
@@ -113,7 +118,8 @@ class Broker:
                 qty,
                 price,
                 side,
-                reduce_only=True
+                reduce_only=True,
+                position_side=position_side
             )
 
         # STOP order
@@ -125,12 +131,13 @@ class Broker:
                 abs(qty),
                 price,
                 side,
-                reduce_only=True
+                reduce_only=True,
+                position_side=position_side
             )
         else:
             raise OrderNotAllowed("This order doesn't seem to be for reducing the position.")
 
-    def start_profit_at(self, side: str, qty: float, price: float) -> Union[Order, None]:
+    def start_profit_at(self, side: str, qty: float, price: float, position_side: str = None) -> Union[Order, None]:
         self._validate_qty(qty)
 
         if price < 0:
@@ -151,7 +158,8 @@ class Broker:
             abs(qty),
             price,
             side,
-            reduce_only=False
+            reduce_only=False,
+            position_side=position_side
         )
 
     def cancel_all_orders(self) -> bool:
